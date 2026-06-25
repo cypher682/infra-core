@@ -1,0 +1,28 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfplan
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Sensitive vars — never commit
+*.tfvars.local
+secrets.auto.tfvars
+
+# Ansible
+ansible/roles/*/files/*.pem
+ansible/roles/*/files/*.key
+*.retry
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

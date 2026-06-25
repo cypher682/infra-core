@@ -1,0 +1,26 @@
+# AWS EC2 dynamic inventory
+# Targets EC2 instances by tag — no hardcoded IPs
+plugin: amazon.aws.aws_ec2
+
+regions:
+  - us-east-1
+
+filters:
+  tag:Project: infra-core
+  tag:Role: app
+  instance-state-name: running
+
+keyed_groups:
+  - key: tags.Environment
+    prefix: env
+  - key: tags.Role
+    prefix: role
+
+hostnames:
+  - private-ip-address  # Use private IP — Ansible runs via SSM tunnel
+
+compose:
+  ansible_host: private_ip_address
+  # SSM connection — no open SSH port required
+  ansible_connection: aws_ssm
+  ansible_aws_ssm_region: us-east-1

@@ -1,0 +1,137 @@
+---
+# CIS Amazon Linux 2023 Benchmark — key controls
+
+- name: Disable root SSH login (CIS 5.2.8)
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#?PermitRootLogin"
+    line: "PermitRootLogin no"
+    state: present
+  notify: restart sshd
+
+- name: Disable password authentication — key-based only (CIS 5.2.11)
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#?PasswordAuthentication"
+    line: "PasswordAuthentication no"
+    state: present
+  notify: restart sshd
+
+- name: Set SSH max auth tries to 4 (CIS 5.2.7)
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#?MaxAuthTries"
+    line: "MaxAuthTries 4"
+    state: present
+  notify: restart sshd
+
+- name: Set SSH login grace time (CIS 5.2.16)
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#?LoginGraceTime"
+    line: "LoginGraceTime 60"
+    state: present
+  notify: restart sshd
+
+- name: Install fail2ban
+  ansible.builtin.dnf:
+    name: fail2ban
+    state: present
+
+- name: Configure fail2ban
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.local
+    content: |
+      [DEFAULT]
+      bantime  = 3600
+      findtime = 600
+      maxretry = 5
+
+      [sshd]
+      enabled = true
+      port    = ssh
+      filter  = sshd
+      logpath = /var/log/secure
+      maxretry = 3
+    mode: "0644"
+  notify: restart fail2ban
+
+- name: Enable and start fail2ban
+  ansible.builtin.systemd:
+    name: fail2ban
+    enabled: true
+    state: started
+
+- name: Install and configure auditd (CIS 4.1)
+  ansible.builtin.dnf:
+    name: audit
+    state: present
+
+- name: Enable auditd
+  ansible.builtin.systemd:
+    name: auditd
+    enabled: true
+    state: started
+
+- name: Set auditd rules — monitor sensitive files (CIS 4.1.x)
+  ansible.builtin.copy:
+    dest: /etc/audit/rules.d/infra-core.rules
+    content: |
+      # Monitor authentication config
+      -w /etc/passwd -p wa -k identity
+      -w /etc/shadow -p wa -k identity
+      -w /etc/sudoers -p wa -k scope
+      # Monitor SSH config
+      -w /etc/ssh/sshd_config -p wa -k sshd
+      # Monitor cron
+      -w /etc/cron.d/ -p wa -k cron
+      # Monitor Docker
+      -w /usr/bin/docker -p x -k docker
+    mode: "0640"
+
+- name: Sysctl hardening (CIS 3.x network parameters)
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: true
+    sysctl_file: /etc/sysctl.d/99-hardening.conf
+  loop:
+    # Disable IP forwarding (not a router)
+    - { key: "net.ipv4.ip_forward", value: "0" }
+    # Disable source routing
+    - { key: "net.ipv4.conf.all.accept_source_route", value: "0" }
+    - { key: "net.ipv4.conf.default.accept_source_route", value: "0" }
+    # Disable ICMP redirects
+    - { key: "net.ipv4.conf.all.accept_redirects", value: "0" }
+    - { key: "net.ipv4.conf.default.accept_redirects", value: "0" }
+    # Enable SYN cookies (protect against SYN flood)
+    - { key: "net.ipv4.tcp_syncookies", value: "1" }
+    # Log martian packets
+    - { key: "net.ipv4.conf.all.log_martians", value: "1" }
+    # Disable IPv6 (not in use)
+    - { key: "net.ipv6.conf.all.disable_ipv6", value: "1" }
+    - { key: "net.ipv6.conf.default.disable_ipv6", value: "1" }
+
+- name: Restrict cron to root only (CIS 5.1.8)
+  ansible.builtin.file:
+    path: /etc/cron.deny
+    state: absent
+
+- name: Set permissions on cron directories (CIS 5.1.x)
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: root
+    group: root
+    mode: "0700"
+  loop:
+    - /etc/cron.d
+    - /etc/cron.daily
+    - /etc/cron.weekly
+    - /etc/cron.monthly
+
+- name: Set umask to 027 in /etc/profile (CIS 5.4.4)
+  ansible.builtin.lineinfile:
+    path: /etc/profile
+    line: "umask 027"
+    state: present

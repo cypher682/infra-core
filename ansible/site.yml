@@ -1,0 +1,33 @@
+---
+# infra-core — master Ansible playbook
+# Run: ansible-playbook site.yml --extra-vars "env=dev"
+# Requires: ansible-galaxy collection install amazon.aws community.general
+
+- name: Configure app servers
+  hosts: "env_{{ env | default('dev') }}"
+  become: true
+  gather_facts: true
+
+  vars:
+    project: infra-core
+    environment: "{{ env | default('dev') }}"
+    ssm_namespace: "/{{ project }}/{{ environment }}"
+
+  roles:
+    - role: common
+      tags: [common]
+
+    - role: hardening
+      tags: [hardening, security]
+
+    - role: docker
+      tags: [docker]
+
+    - role: nginx
+      tags: [nginx]
+
+    - role: monitoring
+      tags: [monitoring]
+
+    - role: app-deploy
+      tags: [deploy]

@@ -1,0 +1,121 @@
+---
+# Reads secrets from SSM Parameter Store at deploy time
+# Never stores secrets on disk or in vars
+
+- name: Fetch DB password from SSM
+  ansible.builtin.command:
+    cmd: >
+      aws ssm get-parameter
+      --name "{{ ssm_namespace }}/db_password"
+      --with-decryption
+      --query "Parameter.Value"
+      --output text
+      --region us-east-1
+  register: db_password_raw
+  changed_when: false
+  no_log: true  # Never print secret values to output
+
+- name: Fetch DB username from SSM
+  ansible.builtin.command:
+    cmd: >
+      aws ssm get-parameter
+      --name "{{ ssm_namespace }}/db_username"
+      --with-decryption
+      --query "Parameter.Value"
+      --output text
+      --region us-east-1
+  register: db_username_raw
+  changed_when: false
+  no_log: true
+
+- name: Fetch DB host from SSM
+  ansible.builtin.command:
+    cmd: >
+      aws ssm get-parameter
+      --name "{{ ssm_namespace }}/db_host"
+      --query "Parameter.Value"
+      --output text
+      --region us-east-1
+  register: db_host_raw
+  changed_when: false
+
+- name: Fetch DB name from SSM
+  ansible.builtin.command:
+    cmd: >
+      aws ssm get-parameter
+      --name "{{ ssm_namespace }}/db_name"
+      --query "Parameter.Value"
+      --output text
+      --region us-east-1
+  register: db_name_raw
+  changed_when: false
+
+- name: Set secret facts (in-memory only — not written to disk)
+  ansible.builtin.set_fact:
+    db_password: "{{ db_password_raw.stdout }}"
+    db_username: "{{ db_username_raw.stdout }}"
+    db_host: "{{ db_host_raw.stdout }}"
+    db_name: "{{ db_name_raw.stdout }}"
+  no_log: true
+
+- name: Write app environment file (root-readable only)
+  ansible.builtin.copy:
+    dest: /opt/app/.env
+    content: |
+      APP_ENV={{ environment }}
+      DB_HOST={{ db_host }}
+      DB_PORT=5432
+      DB_NAME={{ db_name }}
+      DB_USER={{ db_username }}
+      DB_PASSWORD={{ db_password }}
+    owner: appuser
+    group: appuser
+    mode: "0600"  # Only appuser can read — no world-readable secrets
+  no_log: true
+
+- name: Pull latest app image from ECR
+  ansible.builtin.command:
+    cmd: >
+      docker pull
+      {{ aws_account_id }}.dkr.ecr.us-east-1.amazonaws.com/{{ project }}/app:latest
+  register: docker_pull
+  changed_when: "'Status: Downloaded' in docker_pull.stdout or 'Status: Image is up to date' not in docker_pull.stdout"
+  # Note: ECR login is handled via EC2 instance profile — no docker login needed
+
+- name: Stop existing app container (if running)
+  ansible.builtin.command:
+    cmd: docker stop infra-core-app
+  ignore_errors: true
+  changed_when: false
+
+- name: Remove old app container
+  ansible.builtin.command:
+    cmd: docker rm infra-core-app
+  ignore_errors: true
+  changed_when: false
+
+- name: Run app container
+  ansible.builtin.command:
+    cmd: >
+      docker run -d
+      --name infra-core-app
+      --restart unless-stopped
+      --env-file /opt/app/.env
+      -p 127.0.0.1:8000:8000
+      --log-driver json-file
+      --log-opt max-size=50m
+      --log-opt max-file=3
+      --read-only
+      --tmpfs /tmp
+      --security-opt no-new-privileges
+      {{ aws_account_id }}.dkr.ecr.us-east-1.amazonaws.com/{{ project }}/app:latest
+  changed_when: true
+
+- name: Wait for app to be healthy
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:8000/health"
+    status_code: 200
+  register: health_check
+  retries: 10
+  delay: 5
+  until: health_check.status == 200

@@ -1,0 +1,39 @@
+---
+- name: Install Docker
+  ansible.builtin.dnf:
+    name: docker
+    state: present
+
+- name: Install Docker Compose plugin
+  ansible.builtin.dnf:
+    name: docker-compose-plugin
+    state: present
+
+- name: Enable and start Docker daemon
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true
+    state: started
+
+- name: Add appuser to docker group
+  ansible.builtin.user:
+    name: appuser
+    groups: docker
+    append: true
+
+- name: Configure Docker daemon (log rotation + security)
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    content: |
+      {
+        "log-driver": "json-file",
+        "log-opts": {
+          "max-size": "50m",
+          "max-file": "3"
+        },
+        "no-new-privileges": true,
+        "live-restore": true,
+        "userland-proxy": false
+      }
+    mode: "0644"
+  notify: restart docker

@@ -1,0 +1,2 @@
+---
+aws_account_id: "{{ lookup('env', 'AWS_ACCOUNT_ID') }}"

@@ -1,0 +1,65 @@
+---
+- name: Update all packages
+  ansible.builtin.dnf:
+    name: "*"
+    state: latest
+    update_cache: true
+
+- name: Install common utilities
+  ansible.builtin.dnf:
+    name:
+      - curl
+      - wget
+      - git
+      - jq
+      - htop
+      - unzip
+      - python3
+      - python3-pip
+      - vim
+      - tmux
+      - nc
+    state: present
+
+- name: Set hostname
+  ansible.builtin.hostname:
+    name: "{{ project }}-{{ environment }}-{{ inventory_hostname }}"
+
+- name: Set timezone to UTC
+  community.general.timezone:
+    name: UTC
+
+- name: Configure NTP (chrony)
+  ansible.builtin.dnf:
+    name: chrony
+    state: present
+
+- name: Enable and start chronyd
+  ansible.builtin.systemd:
+    name: chronyd
+    enabled: true
+    state: started
+
+- name: Create app user
+  ansible.builtin.user:
+    name: appuser
+    shell: /bin/bash
+    create_home: true
+    groups: docker
+    append: true
+
+- name: Create app directory
+  ansible.builtin.file:
+    path: /opt/app
+    state: directory
+    owner: appuser
+    group: appuser
+    mode: "0755"
+
+- name: Create app logs directory
+  ansible.builtin.file:
+    path: /opt/app/logs
+    state: directory
+    owner: appuser
+    group: appuser
+    mode: "0755"
