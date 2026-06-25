@@ -165,6 +165,13 @@ module "cloudwatch" {
   tags        = local.common_tags
 }
 
+module "security" {
+  source      = "../../modules/security"
+  project     = local.project
+  environment = local.environment
+  tags        = local.common_tags
+}
+
 # ─────────────────────────────────────────────
 # Outputs — useful during sprint
 # ─────────────────────────────────────────────

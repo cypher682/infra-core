@@ -28,6 +28,9 @@ Production-grade AWS infrastructure provisioned with Terraform and hardened with
 [ ECR ] ──► Docker images pulled by Ansible app-deploy role
 [ S3 ] ──► VPC flow logs + application assets
 [ CloudWatch ] ──► metrics, log groups, alarms, SNS email
+[ GuardDuty ] ──► Threat detection
+[ Security Hub ] ──► Posture management and compliance
+[ AWS Config ] ──► Automated resource compliance rules
 [ GitHub Actions OIDC ] ──► Terraform CI/CD (no static keys)
 ```
 
@@ -45,7 +48,7 @@ Production-grade AWS infrastructure provisioned with Terraform and hardened with
 | Secrets | SSM Parameter Store (SecureString + KMS) |
 | Observability | CloudWatch metrics, log groups, alarms, dashboard |
 | CI/CD | GitHub Actions + OIDC — no static AWS keys |
-| Security | IMDSv2, fail2ban, auditd, sysctl hardening, Checkov |
+| Security | GuardDuty, Security Hub, AWS Config, IMDSv2, fail2ban, auditd, Checkov |
 
 ---
 
@@ -161,6 +164,9 @@ OIDC is pre-configured — no `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` nee
 
 | Control | Implementation |
 |---|---|
+| Threat Detection | GuardDuty (intelligent threat protection) |
+| Posture Management | Security Hub (continuous CIS foundations benchmark) |
+| Automated Compliance | AWS Config (managed rules for SSH, S3, EBS encryption) |
 | No public RDS | Private subnet only, `publicly_accessible = false` |
 | No SSH ports | SSM Session Manager — no bastion, no key pairs |
 | IMDSv2 enforced | `http_tokens = required` in launch template |

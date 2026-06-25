@@ -151,6 +151,13 @@ module "cloudwatch" {
   tags        = local.common_tags
 }
 
+module "security" {
+  source      = "../../modules/security"
+  project     = local.project
+  environment = local.environment
+  tags        = local.common_tags
+}
+
 output "alb_dns_name" {
   value = module.alb.alb_dns_name
 }
