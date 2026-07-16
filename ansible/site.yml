@@ -10,8 +10,8 @@
 
   vars:
     project: infra-core
-    environment: "{{ env | default('dev') }}"
-    ssm_namespace: "/{{ project }}/{{ environment }}"
+    deploy_environment: "{{ env | default('dev') }}"
+    ssm_namespace: "/{{ project }}/{{ deploy_environment }}"
 
   roles:
     - role: common

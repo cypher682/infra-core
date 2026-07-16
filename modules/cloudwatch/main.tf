@@ -200,6 +200,8 @@ resource "aws_cloudwatch_metric_alarm" "unhealthy_hosts" {
   tags          = var.tags
 }
 
+data "aws_region" "current" {}
+
 # ─────────────────────────────────────────────
 # CloudWatch Dashboard
 # Single-pane view of all key metrics
@@ -222,7 +224,8 @@ resource "aws_cloudwatch_dashboard" "main" {
           metrics = [
             ["AWS/EC2", "CPUUtilization", "AutoScalingGroupName", var.asg_name]
           ]
-          view = "timeSeries"
+          view   = "timeSeries"
+          region = data.aws_region.current.name
         }
       },
       {
@@ -238,7 +241,8 @@ resource "aws_cloudwatch_dashboard" "main" {
             ["AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", var.db_identifier],
             ["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", var.db_identifier]
           ]
-          view = "timeSeries"
+          view   = "timeSeries"
+          region = data.aws_region.current.name
         }
       },
       {
@@ -254,7 +258,8 @@ resource "aws_cloudwatch_dashboard" "main" {
           metrics = [
             ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", var.alb_arn_suffix]
           ]
-          view = "timeSeries"
+          view   = "timeSeries"
+          region = data.aws_region.current.name
         }
       },
       {
@@ -270,7 +275,8 @@ resource "aws_cloudwatch_dashboard" "main" {
             ["AWS/ApplicationELB", "HTTPCode_Target_5XX_Count", "LoadBalancer", var.alb_arn_suffix, "TargetGroup", var.target_group_arn_suffix],
             ["AWS/ApplicationELB", "UnHealthyHostCount", "LoadBalancer", var.alb_arn_suffix, "TargetGroup", var.target_group_arn_suffix]
           ]
-          view = "timeSeries"
+          view   = "timeSeries"
+          region = data.aws_region.current.name
         }
       }
     ]

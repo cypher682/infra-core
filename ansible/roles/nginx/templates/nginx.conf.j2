@@ -4,7 +4,7 @@ server {
 
     # Health check — ALB pings this
     location /health {
-        return 200 '{"status":"ok","service":"{{ project }}","env":"{{ environment }}"}';
+        return 200 '{"status":"ok","service":"{{ project }}","env":"{{ deploy_environment }}"}';
         add_header Content-Type application/json;
         access_log off;
     }

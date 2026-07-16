@@ -23,7 +23,7 @@
 
 - name: Set hostname
   ansible.builtin.hostname:
-    name: "{{ project }}-{{ environment }}-{{ inventory_hostname }}"
+    name: "{{ project }}-{{ deploy_environment }}-{{ inventory_hostname }}"
 
 - name: Set timezone to UTC
   community.general.timezone:

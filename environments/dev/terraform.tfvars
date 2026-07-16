@@ -6,7 +6,7 @@
 # ─────────────────────────────────────────────
 
 aws_region     = "us-east-1"
-aws_account_id = "YOUR_AWS_ACCOUNT_ID" # Replace before apply
+aws_account_id = "758620460011"
 github_org     = "cypher682"
 github_repo    = "infra-core"
 alert_email    = "suleiman.abdulrahman.dev@gmail.com"

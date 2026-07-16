@@ -4,7 +4,7 @@
 # ─────────────────────────────────────────────
 resource "aws_db_subnet_group" "main" {
   name        = "${var.project}-${var.environment}-db-subnet-group"
-  description = "Private subnets for RDS — no public access"
+  description = "Private subnets for RDS - no public access"
   subnet_ids  = var.private_subnet_ids
 
   tags = merge(var.tags, {
@@ -59,7 +59,7 @@ resource "aws_db_instance" "main" {
 
   # Engine
   engine         = "postgres"
-  engine_version = "15.4"
+  engine_version = "15"
   instance_class = var.instance_class
 
   # Storage

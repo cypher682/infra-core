@@ -65,7 +65,7 @@ ansible: ## Run full Ansible hardening playbook against ENV
 	@echo "→ Running Ansible playbook for ENV=$(ENV)"
 	@echo "   Run this from WSL2 Ubuntu"
 	cd $(ANSIBLE_DIR) && ansible-playbook site.yml \
-		-i inventory/aws_ssm.yml \
+		-i inventory/inventory.aws_ec2.yml \
 		--extra-vars "env=$(ENV)" \
 		-v
 

@@ -11,28 +11,27 @@ Production-grade AWS infrastructure provisioned with Terraform and hardened with
 
 ## Architecture
 
-```
-[ Internet ]
-      │ HTTP :80
-      ▼
-[ ALB — public subnets, 2 AZs ]
-      │
-      ▼
-[ EC2 Auto Scaling Group — private subnets, 2 AZs ]
-      │ :5432
-      ▼
-[ RDS PostgreSQL — private subnets ]
+![infra-core AWS Architecture](infracore_architecture.svg)
 
-[ SSM Session Manager ] ──► EC2  (no SSH port, no bastion)
-[ SSM Parameter Store ] ──► app reads secrets at runtime
-[ ECR ] ──► Docker images pulled by Ansible app-deploy role
-[ S3 ] ──► VPC flow logs + application assets
-[ CloudWatch ] ──► metrics, log groups, alarms, SNS email
-[ GuardDuty ] ──► Threat detection
-[ Security Hub ] ──► Posture management and compliance
-[ AWS Config ] ──► Automated resource compliance rules
-[ GitHub Actions OIDC ] ──► Terraform CI/CD (no static keys)
-```
+**Traffic flow:**
+
+1. **Internet → ALB** (HTTP :80, public subnets, 2 AZs)
+2. **ALB → EC2 ASG** (private subnets, CIS-hardened, Ansible-managed, Docker + Nginx)
+3. **EC2 → RDS PostgreSQL** (:5432, private subnet only, AES-256 encrypted)
+
+**Platform services:**
+
+| Service | Role |
+|---|---|
+| **GitHub Actions OIDC** | Terraform CI/CD — `tf-plan` on PR, `tf-apply` on merge, Checkov scan gates |
+| **SSM Session Manager** | Zero-trust EC2 access — no SSH port, no bastion, no key pairs |
+| **SSM Parameter Store** | Runtime secrets (KMS SecureString) — no secrets in code or state |
+| **Amazon ECR** | Docker image registry — Ansible `app-deploy` role pulls and runs containers |
+| **Amazon S3** | VPC flow logs + application assets (encrypted, private, 30-day retention) |
+| **CloudWatch** | Metrics, log groups, alarms, SNS email alerts, dashboard |
+| **GuardDuty** | Intelligent threat detection |
+| **Security Hub** | CIS Foundations benchmark posture management |
+| **AWS Config** | Automated compliance rules (SSH, S3, EBS encryption) |
 
 ---
 

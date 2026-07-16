@@ -12,17 +12,18 @@ SSM_NAMESPACE="${ssm_namespace}"
 
 echo "=== Bootstrap starting for $PROJECT/$ENVIRONMENT ==="
 
-# System update
-dnf update -y
+# Start SSM first so the instance becomes manageable even if later bootstrap steps fail.
+systemctl enable amazon-ssm-agent
+systemctl restart amazon-ssm-agent
 
-# Install required packages
+# Install required packages. Amazon Linux 2023 ships curl-minimal; installing curl
+# can conflict during cloud-init, and curl-minimal already provides the curl binary.
 dnf install -y \
   docker \
   nginx \
   python3 \
   python3-pip \
   jq \
-  curl \
   wget \
   git \
   htop \

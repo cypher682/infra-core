@@ -11,16 +11,16 @@ filters:
   instance-state-name: running
 
 keyed_groups:
-  - key: tags.Environment
+  - key: ec2_tags.Environment
     prefix: env
-  - key: tags.Role
+  - key: ec2_tags.Role
     prefix: role
 
 hostnames:
-  - private-ip-address  # Use private IP — Ansible runs via SSM tunnel
+  - instance-id
 
 compose:
-  ansible_host: private_ip_address
-  # SSM connection — no open SSH port required
-  ansible_connection: aws_ssm
+  ansible_host: instance_id
+  ansible_aws_ssm_instance_id: instance_id
+  ansible_connection: amazon.aws.aws_ssm
   ansible_aws_ssm_region: us-east-1

@@ -62,7 +62,7 @@
   ansible.builtin.copy:
     dest: /opt/app/.env
     content: |
-      APP_ENV={{ environment }}
+      APP_ENV={{ deploy_environment }}
       DB_HOST={{ db_host }}
       DB_PORT=5432
       DB_NAME={{ db_name }}

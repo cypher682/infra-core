@@ -51,6 +51,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "app" {
     id     = "expire-old-versions"
     status = "Enabled"
 
+    filter {}
+
     noncurrent_version_transition {
       noncurrent_days = 30
       storage_class   = "STANDARD_IA"
@@ -133,6 +135,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "flow_logs" {
   rule {
     id     = "expire-flow-logs"
     status = "Enabled"
+
+    filter {}
 
     expiration {
       days = 30
