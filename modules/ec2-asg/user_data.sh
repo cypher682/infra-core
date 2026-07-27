@@ -12,7 +12,8 @@ SSM_NAMESPACE="${ssm_namespace}"
 
 echo "=== Bootstrap starting for $PROJECT/$ENVIRONMENT ==="
 
-# Start SSM first so the instance becomes manageable even if later bootstrap steps fail.
+# Install and enable SSM Agent first so the instance becomes manageable
+dnf install -y amazon-ssm-agent
 systemctl enable amazon-ssm-agent
 systemctl restart amazon-ssm-agent
 

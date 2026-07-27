@@ -121,6 +121,7 @@
 - name: Set permissions on cron directories (CIS 5.1.x)
   ansible.builtin.file:
     path: "{{ item }}"
+    state: directory
     owner: root
     group: root
     mode: "0700"

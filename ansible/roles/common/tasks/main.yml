@@ -8,7 +8,6 @@
 - name: Install common utilities
   ansible.builtin.dnf:
     name:
-      - curl
       - wget
       - git
       - jq
@@ -18,7 +17,6 @@
       - python3-pip
       - vim
       - tmux
-      - nc
     state: present
 
 - name: Set hostname

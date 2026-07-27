@@ -1,4 +1,4 @@
-name: Terraform Apply
+name: Terraform Apply & App Deploy
 
 on:
   push:
@@ -6,6 +6,10 @@ on:
     paths:
       - "environments/**"
       - "modules/**"
+      - "ansible/**"
+      - "app/**"
+      - ".github/workflows/tf-*.yml"
+  workflow_dispatch:
 
 permissions:
   id-token: write
@@ -17,19 +21,33 @@ env:
   ENVIRONMENT: "dev"
 
 jobs:
-  terraform-apply:
-    name: Apply (${{ env.ENVIRONMENT }})
+  build-and-deploy:
+    name: Build, Apply & Deploy (${{ env.ENVIRONMENT }})
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push Docker image to ECR (if app Dockerfile exists)
+        if: hashFiles('app/Dockerfile') != ''
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: infra-core-dev-app-repo
+          IMAGE_TAG: latest
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./app
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -40,16 +58,15 @@ jobs:
         working-directory: environments/${{ env.ENVIRONMENT }}
         run: terraform init
 
-      - name: Terraform Apply
+      - name: Terraform Apply (Idempotent)
         working-directory: environments/${{ env.ENVIRONMENT }}
         run: |
           terraform apply \
             -auto-approve \
             -var="aws_account_id=${{ secrets.AWS_ACCOUNT_ID }}" \
             -var="db_password=${{ secrets.DB_PASSWORD }}" \
-            -var="db_username=${{ secrets.DB_USERNAME }}"
-        env:
-          TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+            -var="db_username=${{ secrets.DB_USERNAME }}" \
+            -var="alert_email=${{ secrets.ALERT_EMAIL }}"
 
       - name: Get ALB DNS name
         id: alb
@@ -58,10 +75,27 @@ jobs:
           ALB_DNS=$(terraform output -raw alb_dns_name)
           echo "alb_dns=$ALB_DNS" >> $GITHUB_OUTPUT
 
-      - name: Smoke test — health check
+      - name: Install Ansible & AWS SSM dependencies
         run: |
-          echo "Waiting 60s for EC2 instances to register with ALB..."
-          sleep 60
+          pip install ansible
+          ansible-galaxy collection install amazon.aws community.general
+
+      - name: Run Ansible Playbook via SSM
+        run: |
+          mkdir -p ~/.ansible
+          cp ansible/ansible.cfg ~/.ansible.cfg
+          cd ansible
+          ansible-playbook site.yml \
+            -i inventory/inventory.aws_ec2.yml \
+            --extra-vars "env=${{ env.ENVIRONMENT }} aws_account_id=${{ secrets.AWS_ACCOUNT_ID }}" \
+            -v
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+
+      - name: Smoke test — ALB Health Check
+        run: |
+          echo "Waiting 30s for ALB health check evaluation..."
+          sleep 30
           
           ALB_URL="http://${{ steps.alb.outputs.alb_dns }}/health"
           echo "Testing: $ALB_URL"

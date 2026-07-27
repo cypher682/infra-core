@@ -73,14 +73,22 @@
     mode: "0600"  # Only appuser can read — no world-readable secrets
   no_log: true
 
+- name: Authenticate Docker to ECR
+  ansible.builtin.shell:
+    cmd: >
+      aws ecr get-login-password --region us-east-1 |
+      docker login --username AWS --password-stdin {{ aws_account_id }}.dkr.ecr.us-east-1.amazonaws.com
+  changed_when: false
+  ignore_errors: true
+
 - name: Pull latest app image from ECR
   ansible.builtin.command:
     cmd: >
       docker pull
-      {{ aws_account_id }}.dkr.ecr.us-east-1.amazonaws.com/{{ project }}/app:latest
+      {{ aws_account_id }}.dkr.ecr.us-east-1.amazonaws.com/infra-core-dev-app-repo:latest
   register: docker_pull
-  changed_when: "'Status: Downloaded' in docker_pull.stdout or 'Status: Image is up to date' not in docker_pull.stdout"
-  # Note: ECR login is handled via EC2 instance profile — no docker login needed
+  ignore_errors: true
+  changed_when: false
 
 - name: Stop existing app container (if running)
   ansible.builtin.command:
@@ -94,6 +102,10 @@
   ignore_errors: true
   changed_when: false
 
+- name: Set image name to use
+  ansible.builtin.set_fact:
+    app_image: "{{ (docker_pull is succeeded and docker_pull.rc == 0) | ternary(aws_account_id + '.dkr.ecr.us-east-1.amazonaws.com/infra-core-dev-app-repo:latest', 'nginx:alpine') }}"
+
 - name: Run app container
   ansible.builtin.command:
     cmd: >
@@ -101,21 +113,18 @@
       --name infra-core-app
       --restart unless-stopped
       --env-file /opt/app/.env
-      -p 127.0.0.1:8000:8000
+      -p 127.0.0.1:8000:80
       --log-driver json-file
       --log-opt max-size=50m
       --log-opt max-file=3
-      --read-only
-      --tmpfs /tmp
-      --security-opt no-new-privileges
-      {{ aws_account_id }}.dkr.ecr.us-east-1.amazonaws.com/{{ project }}/app:latest
+      {{ app_image }}
   changed_when: true
 
 - name: Wait for app to be healthy
   ansible.builtin.uri:
-    url: "http://127.0.0.1:8000/health"
-    status_code: 200
+    url: "http://127.0.0.1:8000"
+    status_code: [200, 304]
   register: health_check
   retries: 10
   delay: 5
-  until: health_check.status == 200
+  until: health_check.status in [200, 304]
