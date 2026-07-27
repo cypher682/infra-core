@@ -243,7 +243,7 @@ OIDC is pre-configured — **no `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` n
 | **Threat detection** | GuardDuty — ML analysis of CloudTrail, VPC flow logs, DNS logs |
 | **Posture management** | Security Hub — continuous CIS Foundations Benchmark v1.4 scoring |
 | **Automated compliance** | AWS Config — SSH exposure, public S3, unencrypted EBS |
-| **No public database** | RDS in database subnets only, `publicly_accessible = false` |
+| **No public database** | RDS in private subnets, SG-isolated — `publicly_accessible = false`, port 5432 from `sg-app` only |
 | **No SSH ports** | Zero port 22 rules; all access via SSM Session Manager |
 | **IMDSv2 enforced** | `http_tokens = required` in EC2 launch template |
 | **Encrypted at rest** | RDS, EBS, S3 — AES-256 across all storage layers |
@@ -330,6 +330,7 @@ Deployment successfully validated end-to-end on 2026-07-27:
 
 ## Related Documentation
 
+- [`docs/evidence/`](docs/evidence/) — sprint screenshots and CLI output for portfolio and Dev.to
 - [`infra-core-what-is.md`](../infra-core-what-is.md) — plain-language deep dive: architecture, real-world use cases, interview Q&A
 - [`infra-core-content-drafts.md`](../infra-core-content-drafts.md) — LinkedIn, Dev.to, and X publishing drafts
 - [`infracore-build-overview.md`](../infracore-build-overview.md) — chronological build log

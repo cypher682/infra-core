@@ -1,0 +1,17 @@
+# infra-core — Evidence Placeholder
+
+This file marks the evidence directory. Replace with actual sprint screenshots.
+
+Screenshots to capture during the next sprint:
+- 01-tf-plan-summary.png
+- 02-tf-apply-complete.png
+- 03-pipeline-green.png
+- 04-alb-health-check.png
+- 05-cloudwatch-dashboard.png
+- 06-ssm-session.png
+- 07-ansible-run.png
+- 08-guardduty-enabled.png
+- 09-security-hub-enabled.png
+- 10-destroy-complete.png
+
+See README.md in this folder for full descriptions.
