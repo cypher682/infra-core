@@ -328,13 +328,9 @@ Deployment successfully validated end-to-end on 2026-07-27:
 
 ---
 
-## Related Documentation
+## Documentation & Evidence
 
-- [`docs/evidence/`](docs/evidence/) — sprint screenshots and CLI output for portfolio and Dev.to
-- [`infra-core-what-is.md`](../infra-core-what-is.md) — plain-language deep dive: architecture, real-world use cases, interview Q&A
-- [`infra-core-content-drafts.md`](../infra-core-content-drafts.md) — LinkedIn, Dev.to, and X publishing drafts
-- [`infracore-build-overview.md`](../infracore-build-overview.md) — chronological build log
-- [`infra-core-deployment-and-evidence-guide.md`](../infra-core-deployment-and-evidence-guide.md) — step-by-step evidence capture guide
+- [`docs/evidence/`](docs/evidence/) — Sprint evidence checklist, screenshots, and CLI verification steps
 
 ---
 
